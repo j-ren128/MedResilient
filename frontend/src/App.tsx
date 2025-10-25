@@ -56,7 +56,7 @@ function App() {
             <div>
               <h1 className="text-3xl font-bold">🏥 MedAlt</h1>
               <p className="text-sm text-blue-100">
-                Google Earth AI for Healthcare Supply Chain Sustainability
+                Google Earth AI for Healthcare Supply Chain Resilience
               </p>
             </div>
             <div className="flex gap-2">
