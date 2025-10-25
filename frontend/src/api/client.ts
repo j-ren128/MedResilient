@@ -55,6 +55,9 @@ export interface RouteRecommendation {
   weighted_score: number;
   route_polyline: string | null;
   estimated_time: string | null;
+  requested_device?: string | null;
+  offered_device?: string | null;
+  is_substitute?: boolean;
 }
 
 export interface MapData {

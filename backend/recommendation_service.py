@@ -5,6 +5,7 @@ from gee_service import GEEService
 from fema_service import FEMAService
 from route_service import RouteService
 from config import Config
+from product_substitutes import get_product_with_substitutes, is_substitute
 
 
 class RecommendationService:
@@ -80,18 +81,31 @@ class RecommendationService:
                                 device: str = None) -> List[RouteRecommendation]:
         """
         Generate ranked recommendations for suppliers to a hospital
-        Optionally filter by device if specified
+        Optionally filter by device if specified (includes substitutes)
         """
         recommendations = []
         
-        # Filter providers by device if specified
-        filtered_providers = providers
-        if device:
-            filtered_providers = [
-                p for p in providers 
-                if p.devices_supplied and device in p.devices_supplied
-            ]
-            print(f"Filtered to {len(filtered_providers)} providers that supply '{device}'")
+        # Filter providers by device if specified (including substitutes)
+        if device and device.strip():
+            # Get the device and its acceptable substitutes
+            acceptable_products = get_product_with_substitutes(device)
+            print(f"Looking for providers that supply: {acceptable_products}")
+            
+            # Filter providers and track which product they offer
+            provider_product_map = {}
+            for provider in providers:
+                if provider.devices_supplied:
+                    # Check if provider supplies any of the acceptable products
+                    for supplied in provider.devices_supplied:
+                        if supplied in acceptable_products:
+                            provider_product_map[provider.provider_id] = supplied
+                            break
+            
+            filtered_providers = [p for p in providers if p.provider_id in provider_product_map]
+            print(f"Filtered to {len(filtered_providers)} providers (including substitutes)")
+        else:
+            filtered_providers = providers
+            provider_product_map = {}
         
         for provider in filtered_providers:
             # Get route details
@@ -114,6 +128,13 @@ class RecommendationService:
                 beta
             )
             
+            # Determine if provider is offering substitute product
+            offered_device = None
+            is_substitute_product = False
+            if device and provider.provider_id in provider_product_map:
+                offered_device = provider_product_map[provider.provider_id]
+                is_substitute_product = is_substitute(device, offered_device)
+            
             # Create recommendation
             recommendation = RouteRecommendation(
                 provider=provider,
@@ -124,7 +145,10 @@ class RecommendationService:
                 flood_risk=flood_risk,
                 weighted_score=weighted_score,
                 route_polyline=route_details['polyline'],
-                estimated_time=route_details['estimated_time']
+                estimated_time=route_details['estimated_time'],
+                requested_device=device,
+                offered_device=offered_device,
+                is_substitute=is_substitute_product
             )
             
             recommendations.append(recommendation)

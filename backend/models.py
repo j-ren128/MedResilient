@@ -94,6 +94,9 @@ class RouteRecommendation:
     weighted_score: float
     route_polyline: Optional[str] = None
     estimated_time: Optional[str] = None
+    requested_device: Optional[str] = None  # The device user requested
+    offered_device: Optional[str] = None  # The device provider offers (may be substitute)
+    is_substitute: bool = False  # True if offering a substitute product
     
     def to_dict(self):
         return {
@@ -105,6 +108,9 @@ class RouteRecommendation:
             'flood_risk': round(self.flood_risk, 3),
             'weighted_score': round(self.weighted_score, 3),
             'route_polyline': self.route_polyline,
-            'estimated_time': self.estimated_time
+            'estimated_time': self.estimated_time,
+            'requested_device': self.requested_device,
+            'offered_device': self.offered_device,
+            'is_substitute': self.is_substitute
         }
 

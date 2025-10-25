@@ -20,11 +20,9 @@ export default function RecommendationPanel() {
     isLoading,
     setIsLoading,
     setError,
-    filterDevice,
-    setFilterDevice,
   } = useAppStore();
 
-  const [limit, setLimit] = useState(5);
+  const [limit] = useState(5);
   const [selectedDevice, setSelectedDevice] = useState("");
 
   useEffect(() => {
@@ -188,6 +186,11 @@ export default function RecommendationPanel() {
               Select a hospital first to see available devices
             </p>
           )}
+          {selectedDevice && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+              ℹ️ Results include providers offering substitute products
+            </p>
+          )}
         </div>
       </div>
 
@@ -306,13 +309,25 @@ export default function RecommendationPanel() {
                   }`}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="font-bold text-gray-900 dark:text-white">
-                        #{index + 1} {rec.provider.name}
-                      </h4>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-gray-900 dark:text-white">
+                          #{index + 1} {rec.provider.name}
+                        </h4>
+                        {rec.is_substitute && (
+                          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs rounded font-semibold">
+                            Substitute
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {rec.provider.city} • {rec.transport_mode}
                       </p>
+                      {rec.is_substitute && rec.offered_device && (
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                          ⚠️ Offers: {rec.offered_device}
+                        </p>
+                      )}
                     </div>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold ${getScoreBadgeColor(
