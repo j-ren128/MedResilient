@@ -151,7 +151,8 @@ def get_recommendations():
         "hospital_id": "H001",
         "alpha": 0.6,  // optional
         "beta": 0.4,   // optional
-        "limit": 5     // optional
+        "limit": 5,    // optional
+        "device": "Ventilator"  // optional - filter by device
     }
     """
     try:
@@ -160,6 +161,7 @@ def get_recommendations():
         alpha = data.get('alpha')
         beta = data.get('beta')
         limit = data.get('limit')
+        device = data.get('device')
         
         if not hospital_id:
             return jsonify({
@@ -177,7 +179,7 @@ def get_recommendations():
         providers = data_service.get_all_providers()
         
         recommendations = recommendation_service.generate_recommendations(
-            hospital, providers, alpha, beta, limit
+            hospital, providers, alpha, beta, limit, device
         )
         
         return jsonify({
@@ -261,6 +263,7 @@ def get_map_data():
             marker = provider.to_dict()
             marker['flood_zone'] = fema_data['zone']
             marker['risk_level'] = fema_data['risk_level']
+            marker['risk_score'] = fema_data['risk_score']
             provider_markers.append(marker)
         
         return jsonify({

@@ -1,5 +1,6 @@
 """Service for loading and managing data"""
 import pandas as pd
+import json
 from typing import List, Optional
 from models import Hospital, Provider, Order
 from config import Config
@@ -35,8 +36,19 @@ class DataService:
             
             # Load providers
             df_providers = pd.read_csv(Config.PROVIDERS_CSV)
-            self.providers = [
-                Provider(
+            self.providers = []
+            for _, row in df_providers.iterrows():
+                # Parse devices_supplied JSON field
+                devices_supplied = []
+                if 'devices_supplied' in row and pd.notna(row['devices_supplied']):
+                    try:
+                        devices_str = str(row['devices_supplied']).strip()
+                        devices_supplied = json.loads(devices_str)
+                    except json.JSONDecodeError:
+                        print(f"Warning: Could not parse devices for provider {row['provider_id']}")
+                        devices_supplied = []
+                
+                provider = Provider(
                     provider_id=row['provider_id'],
                     name=row['name'],
                     type=row['type'],
@@ -46,10 +58,10 @@ class DataService:
                     zip=row['zip'],
                     latitude=float(row['latitude']),
                     longitude=float(row['longitude']),
-                    transport_mode=row['transport_mode']
+                    transport_mode=row['transport_mode'],
+                    devices_supplied=devices_supplied
                 )
-                for _, row in df_providers.iterrows()
-            ]
+                self.providers.append(provider)
             
             # Load orders
             df_orders = pd.read_csv(Config.ORDERS_CSV)
@@ -138,8 +150,19 @@ class DataService:
                 ]
             elif csv_type == 'providers':
                 df = pd.read_csv(file_path)
-                self.providers = [
-                    Provider(
+                self.providers = []
+                for _, row in df.iterrows():
+                    # Parse devices_supplied JSON field
+                    devices_supplied = []
+                    if 'devices_supplied' in row and pd.notna(row['devices_supplied']):
+                        try:
+                            devices_str = str(row['devices_supplied']).strip()
+                            devices_supplied = json.loads(devices_str)
+                        except json.JSONDecodeError:
+                            print(f"Warning: Could not parse devices for provider {row['provider_id']}")
+                            devices_supplied = []
+                    
+                    provider = Provider(
                         provider_id=row['provider_id'],
                         name=row['name'],
                         type=row['type'],
@@ -149,10 +172,10 @@ class DataService:
                         zip=row['zip'],
                         latitude=float(row['latitude']),
                         longitude=float(row['longitude']),
-                        transport_mode=row['transport_mode']
+                        transport_mode=row['transport_mode'],
+                        devices_supplied=devices_supplied
                     )
-                    for _, row in df.iterrows()
-                ]
+                    self.providers.append(provider)
             elif csv_type == 'orders':
                 df = pd.read_csv(file_path)
                 self.orders = [

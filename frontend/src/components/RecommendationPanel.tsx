@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "../store/appStore";
 import api, { RouteRecommendation } from "../api/client";
 
 export default function RecommendationPanel() {
   const {
     hospitals,
+    orders,
     alpha,
     beta,
     setAlpha,
@@ -15,18 +16,22 @@ export default function RecommendationPanel() {
     setSelectedHospital,
     selectedRecommendation,
     setSelectedRecommendation,
+    confirmSelection,
     isLoading,
     setIsLoading,
     setError,
+    filterDevice,
+    setFilterDevice,
   } = useAppStore();
 
   const [limit, setLimit] = useState(5);
+  const [selectedDevice, setSelectedDevice] = useState("");
 
   useEffect(() => {
     if (selectedHospital) {
       loadRecommendations();
     }
-  }, [selectedHospital, alpha, beta]);
+  }, [selectedHospital, alpha, beta, selectedDevice]);
 
   const loadRecommendations = async () => {
     if (!selectedHospital) return;
@@ -37,7 +42,8 @@ export default function RecommendationPanel() {
         selectedHospital.hospital_id,
         alpha,
         beta,
-        limit
+        limit,
+        selectedDevice || undefined
       );
       setRecommendations(data);
       setError(null);
@@ -63,34 +69,126 @@ export default function RecommendationPanel() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
   };
 
+  // Get unique devices from orders, optionally filtered by hospital
+  const availableDevices = useMemo(() => {
+    let filteredOrders = orders;
+    if (selectedHospital) {
+      filteredOrders = orders.filter(
+        (order) => order.hospital_id === selectedHospital.hospital_id
+      );
+    }
+    const devices = [
+      ...new Set(filteredOrders.map((order) => order.device_name)),
+    ];
+    return devices.sort();
+  }, [orders, selectedHospital]);
+
+  // Calculate savings compared to worst option
+  const calculateSavings = (selectedRec: RouteRecommendation) => {
+    if (recommendations.length === 0) return { carbonSaved: 0, timeSaved: 0 };
+
+    const worstRec = recommendations[recommendations.length - 1];
+    const carbonSaved =
+      worstRec.carbon_emission_kg - selectedRec.carbon_emission_kg;
+
+    // Estimate time saved based on distance (assuming 60 km/h average speed)
+    const worstTime = worstRec.distance_km / 60; // hours
+    const selectedTime = selectedRec.distance_km / 60;
+    const timeSaved = (worstTime - selectedTime) * 60; // minutes
+
+    return {
+      carbonSaved: Math.max(0, carbonSaved),
+      timeSaved: Math.max(0, timeSaved),
+    };
+  };
+
+  const handleConfirmSelection = () => {
+    if (!selectedRecommendation || !selectedDevice) {
+      setError("Please select both a provider and a device");
+      return;
+    }
+
+    const { carbonSaved, timeSaved } = calculateSavings(selectedRecommendation);
+    confirmSelection(
+      selectedRecommendation,
+      selectedDevice,
+      carbonSaved,
+      timeSaved
+    );
+
+    // Clear selections after confirmation
+    setSelectedRecommendation(null);
+    setSelectedDevice("");
+
+    // Show success message
+    alert(
+      `✅ Selection confirmed!\n\nCO₂ Saved: ${carbonSaved.toFixed(
+        2
+      )} kg\nTime Saved: ${timeSaved.toFixed(0)} minutes`
+    );
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
         ⚙️ Supplier Recommendations
       </h2>
 
-      {/* Hospital Selection */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Select Hospital
-        </label>
-        <select
-          value={selectedHospital?.hospital_id || ""}
-          onChange={(e) => {
-            const hospital = hospitals.find(
-              (h) => h.hospital_id === e.target.value
-            );
-            setSelectedHospital(hospital || null);
-          }}
-          className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-        >
-          <option value="">Choose a hospital...</option>
-          {hospitals.map((hospital) => (
-            <option key={hospital.hospital_id} value={hospital.hospital_id}>
-              {hospital.name} - {hospital.city}
-            </option>
-          ))}
-        </select>
+      {/* Filters Section */}
+      <div className="mb-6 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Filters
+        </h3>
+
+        {/* Hospital Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Hospital
+          </label>
+          <select
+            value={selectedHospital?.hospital_id || ""}
+            onChange={(e) => {
+              const hospital = hospitals.find(
+                (h) => h.hospital_id === e.target.value
+              );
+              setSelectedHospital(hospital || null);
+              setSelectedDevice(""); // Reset device when hospital changes
+            }}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+          >
+            <option value="">Choose a hospital...</option>
+            {hospitals.map((hospital) => (
+              <option key={hospital.hospital_id} value={hospital.hospital_id}>
+                {hospital.name} - {hospital.city}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Device Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Select Device
+          </label>
+          <select
+            value={selectedDevice}
+            onChange={(e) => setSelectedDevice(e.target.value)}
+            disabled={!selectedHospital}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">All devices...</option>
+            {availableDevices.map((device) => (
+              <option key={device} value={device}>
+                {device}
+              </option>
+            ))}
+          </select>
+          {!selectedHospital && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Select a hospital first to see available devices
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Weight Controls */}
@@ -158,9 +256,16 @@ export default function RecommendationPanel() {
       {selectedHospital && (
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ranked Suppliers
-            </h3>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Ranked Suppliers
+              </h3>
+              {selectedDevice && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  🔍 Filtered for "{selectedDevice}"
+                </p>
+              )}
+            </div>
             <button
               onClick={loadRecommendations}
               disabled={isLoading}
@@ -175,9 +280,18 @@ export default function RecommendationPanel() {
               <div className="spinner"></div>
             </div>
           ) : recommendations.length === 0 ? (
-            <p className="text-center py-8 text-gray-500 dark:text-gray-400">
-              No recommendations available
-            </p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">
+                {selectedDevice
+                  ? `No providers found that supply "${selectedDevice}"`
+                  : "No recommendations available"}
+              </p>
+              {selectedDevice && (
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                  Try selecting "All devices" or a different device
+                </p>
+              )}
+            </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {recommendations.map((rec, index) => (
@@ -251,6 +365,36 @@ export default function RecommendationPanel() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Confirm Selection Button */}
+          {selectedRecommendation && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg border-2 border-blue-500">
+              <h4 className="font-bold text-blue-900 dark:text-blue-100 mb-2">
+                Ready to confirm selection?
+              </h4>
+              <p className="text-sm text-blue-700 dark:text-blue-200 mb-3">
+                Selected:{" "}
+                <strong>{selectedRecommendation.provider.name}</strong>
+                {selectedDevice && (
+                  <span className="block mt-1">
+                    Device: <strong>{selectedDevice}</strong>
+                  </span>
+                )}
+              </p>
+              {!selectedDevice && (
+                <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                  ⚠️ Please select a device above to continue
+                </p>
+              )}
+              <button
+                onClick={handleConfirmSelection}
+                disabled={!selectedDevice}
+                className="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                ✓ Confirm Selection & Save to Dashboard
+              </button>
             </div>
           )}
         </div>

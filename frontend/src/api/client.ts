@@ -29,6 +29,8 @@ export interface Provider {
   transport_mode: string;
   flood_zone?: string;
   risk_level?: string;
+  risk_score?: number;
+  devices_supplied?: string[];
 }
 
 export interface Order {
@@ -111,13 +113,15 @@ export const api = {
     hospitalId: string,
     alpha?: number,
     beta?: number,
-    limit?: number
+    limit?: number,
+    device?: string
   ): Promise<RouteRecommendation[]> => {
     const response = await apiClient.post("/recommendations", {
       hospital_id: hospitalId,
       alpha,
       beta,
       limit,
+      device,
     });
     return response.data.recommendations;
   },

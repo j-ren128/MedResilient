@@ -1,5 +1,7 @@
 """FEMA API service for flood zone data"""
 import requests
+import pandas as pd
+import os
 from typing import Optional, Dict
 from config import Config
 
@@ -10,34 +12,66 @@ class FEMAService:
     def __init__(self):
         self.api_key = Config.FEMA_API_KEY
         self.base_url = "https://www.fema.gov/api/open/v2"
+        
+        # Load flood zone risk scores from CSV
+        csv_path = os.path.join(os.path.dirname(__file__), 'data', 'fema_zone_risk_score.csv')
+        self.zone_risk_df = pd.read_csv(csv_path)
+        # Clean up whitespace in column names and values
+        self.zone_risk_df.columns = self.zone_risk_df.columns.str.strip()
+        self.zone_risk_df['zone'] = self.zone_risk_df['zone'].str.strip()
+        
+        # Create a dictionary for quick lookup
+        self.zone_risk_map = dict(zip(self.zone_risk_df['zone'], self.zone_risk_df['risk_score']))
     
     def get_flood_zone(self, latitude: float, longitude: float) -> Dict:
         """
         Get FEMA flood zone information for a location
-        Returns flood zone classification and risk level
+        Returns flood zone classification and risk level from CSV lookup
         """
         try:
-            # FEMA National Flood Hazard Layer endpoint
-            # Note: This is a simplified implementation
-            # Real implementation would use FEMA's flood zone API or shapefile data
-            
-            headers = {
-                'Authorization': f'Bearer {self.api_key}'
+            # Call FEMA/National Flood Data API
+            headers = {'x-api-key': 'd4NyIxwf632nCvJcHUqU62KSTnwghIfO8xWIsWdC'}
+            payload = {
+                'lat': latitude,
+                'lng': longitude,
+                'searchtype': 'coord',
+                'loma': False
             }
+            r = requests.get('https://api.nationalflooddata.com/v3/data', headers=headers, params=payload)
             
-            # For now, we'll use a heuristic based on Florida geography
-            # In production, this would query actual FEMA flood zone data
-            flood_zone = self._estimate_flood_zone(latitude, longitude)
+            # Extract flood zone from API response
+            flood_zone = r.json()['result']['flood.s_fld_haz_ar'][0]['fld_zone']
             
-            return flood_zone
+            # Look up risk score from CSV
+            risk_score = self.zone_risk_map.get(flood_zone.strip(), 0.5)  # Default to 0.5 if zone not found
             
-        except Exception as e:
-            print(f"Error getting FEMA flood zone: {e}")
+            # Determine risk level based on score
+            if risk_score >= 0.8:
+                risk_level = 'high'
+                description = f'High-risk flood zone ({flood_zone})'
+            elif risk_score >= 0.6:
+                risk_level = 'moderate-high'
+                description = f'Moderate to high flood risk ({flood_zone})'
+            elif risk_score >= 0.3:
+                risk_level = 'moderate'
+                description = f'Moderate flood risk ({flood_zone})'
+            else:
+                risk_level = 'minimal'
+                description = f'Low flood risk ({flood_zone})'
+            
             return {
-                'zone': 'X',
-                'risk_level': 'minimal',
-                'risk_score': 0.1
+                'zone': flood_zone,
+                'risk_level': risk_level,
+                'risk_score': risk_score,
+                'description': description
             }
+
+        except Exception as e:
+            print(f"Error getting FEMA flood zone from API: {e}")
+            
+            # Fallback to heuristic estimation
+            return self._estimate_flood_zone(latitude, longitude)
+
     
     def _estimate_flood_zone(self, latitude: float, longitude: float) -> Dict:
         """
@@ -90,34 +124,34 @@ class FEMAService:
                 'description': 'Low flood risk'
             }
     
-    def get_disaster_declarations(self, state: str = 'FL') -> list:
-        """
-        Get recent disaster declarations for a state
-        """
-        try:
-            url = f"{self.base_url}/DisasterDeclarationsSummaries"
-            params = {
-                'state': state,
-                '$top': 10,
-                '$orderby': 'declarationDate desc'
-            }
+    # def get_disaster_declarations(self, state: str = 'FL') -> list:
+    #     """
+    #     Get recent disaster declarations for a state
+    #     """
+    #     try:
+    #         url = f"{self.base_url}/DisasterDeclarationsSummaries"
+    #         params = {
+    #             'state': state,
+    #             '$top': 10,
+    #             '$orderby': 'declarationDate desc'
+    #         }
             
-            headers = {
-                'Authorization': f'Bearer {self.api_key}'
-            }
+    #         headers = {
+    #             'Authorization': f'Bearer {self.api_key}'
+    #         }
             
-            response = requests.get(url, params=params, headers=headers, timeout=10)
+    #         response = requests.get(url, params=params, headers=headers, timeout=10)
             
-            if response.status_code == 200:
-                data = response.json()
-                return data.get('DisasterDeclarationsSummaries', [])
-            else:
-                print(f"FEMA API error: {response.status_code}")
-                return []
+    #         if response.status_code == 200:
+    #             data = response.json()
+    #             return data.get('DisasterDeclarationsSummaries', [])
+    #         else:
+    #             print(f"FEMA API error: {response.status_code}")
+    #             return []
                 
-        except Exception as e:
-            print(f"Error getting disaster declarations: {e}")
-            return []
+    #     except Exception as e:
+    #         print(f"Error getting disaster declarations: {e}")
+    #         return []
     
     def combine_risk_score(self, fema_score: float, gee_score: float) -> float:
         """
@@ -126,6 +160,7 @@ class FEMAService:
         GEE provides dynamic precipitation/elevation data
         """
         # Weight: 60% FEMA static zones, 40% GEE dynamic data
-        combined_score = (0.6 * fema_score) + (0.4 * gee_score)
+        combined_score = (0.4 * fema_score) + (0.6 * gee_score)
         return min(1.0, max(0.0, combined_score))
+    
 

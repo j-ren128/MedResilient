@@ -76,13 +76,24 @@ class RecommendationService:
                                 providers: List[Provider],
                                 alpha: float = None,
                                 beta: float = None,
-                                limit: int = None) -> List[RouteRecommendation]:
+                                limit: int = None,
+                                device: str = None) -> List[RouteRecommendation]:
         """
         Generate ranked recommendations for suppliers to a hospital
+        Optionally filter by device if specified
         """
         recommendations = []
         
-        for provider in providers:
+        # Filter providers by device if specified
+        filtered_providers = providers
+        if device:
+            filtered_providers = [
+                p for p in providers 
+                if p.devices_supplied and device in p.devices_supplied
+            ]
+            print(f"Filtered to {len(filtered_providers)} providers that supply '{device}'")
+        
+        for provider in filtered_providers:
             # Get route details
             route_details = self.route_service.get_route_details(
                 provider.latitude,

@@ -5,9 +5,10 @@ import MapView from "./components/MapView";
 import OrderDashboard from "./components/OrderDashboard";
 import RecommendationPanel from "./components/RecommendationPanel";
 import UploadPanel from "./components/UploadPanel";
+import SavingsDashboard from "./components/SavingsDashboard";
 
 function App() {
-  const { setHospitals, setProviders, setError } = useAppStore();
+  const { setHospitals, setProviders, setOrders, setError } = useAppStore();
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "recommendations" | "upload"
   >("dashboard");
@@ -23,6 +24,11 @@ function App() {
       const mapData = await api.getMapData();
       setHospitals(mapData.hospitals);
       setProviders(mapData.providers);
+
+      // Load orders data
+      const ordersData = await api.getOrders();
+      setOrders(ordersData);
+
       setIsInitialized(true);
     } catch (error) {
       console.error("Failed to initialize data:", error);
@@ -124,6 +130,9 @@ function App() {
             {activeTab === "upload" && <UploadPanel />}
           </div>
         </div>
+
+        {/* Savings Dashboard - Shows when selections are confirmed */}
+        <SavingsDashboard />
 
         {/* Bottom Section - Full Width Dashboard (Optional) */}
         {activeTab === "dashboard" && (

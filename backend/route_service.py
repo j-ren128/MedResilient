@@ -143,17 +143,17 @@ class RouteService:
             'estimated_time': duration
         }
     
-    def compare_transport_modes(self, distance_km: float) -> Dict[str, float]:
-        """
-        Compare carbon emissions across different transport modes
-        """
-        comparisons = {}
+    # def compare_transport_modes(self, distance_km: float) -> Dict[str, float]:
+    #     """
+    #     Compare carbon emissions across different transport modes
+    #     """
+    #     comparisons = {}
         
-        for mode, factor in self.emission_factors.items():
-            comparisons[mode] = {
-                'emission_kg': distance_km * factor,
-                'emission_factor': factor
-            }
+    #     for mode, factor in self.emission_factors.items():
+    #         comparisons[mode] = {
+    #             'emission_kg': distance_km * factor,
+    #             'emission_factor': factor
+    #         }
         
-        return comparisons
+    #     return comparisons
 

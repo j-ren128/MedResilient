@@ -41,6 +41,7 @@ class Provider:
     latitude: float
     longitude: float
     transport_mode: str  # truck, van, air, rail, ship
+    devices_supplied: list = None  # List of devices this provider supplies
     
     def to_dict(self):
         return {
@@ -53,7 +54,8 @@ class Provider:
             'zip': self.zip,
             'latitude': self.latitude,
             'longitude': self.longitude,
-            'transport_mode': self.transport_mode
+            'transport_mode': self.transport_mode,
+            'devices_supplied': self.devices_supplied or []
         }
 
 

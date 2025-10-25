@@ -94,6 +94,23 @@ export default function MapView({
 
     // Add provider markers (green)
     providers.forEach((provider) => {
+      // Determine marker color based on flood risk score
+      let fillColor = "#10B981"; // green (low risk)
+      let strokeColor = "#059669";
+
+      if (provider.risk_score !== undefined) {
+        if (provider.risk_score >= 0.8) {
+          fillColor = "#EF4444"; // red (high risk)
+          strokeColor = "#DC2626";
+        } else if (provider.risk_score >= 0.6) {
+          fillColor = "#F59E0B"; // amber (moderate-high risk)
+          strokeColor = "#D97706";
+        } else if (provider.risk_score >= 0.3) {
+          fillColor = "#FBBF24"; // yellow (moderate risk)
+          strokeColor = "#F59E0B";
+        }
+      }
+
       const marker = new google.maps.Marker({
         position: { lat: provider.latitude, lng: provider.longitude },
         map: map,
@@ -101,31 +118,62 @@ export default function MapView({
         icon: {
           path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
           scale: 6,
-          fillColor: "#10B981",
+          fillColor: fillColor,
           fillOpacity: 0.9,
-          strokeColor: "#059669",
+          strokeColor: strokeColor,
           strokeWeight: 2,
         },
       });
 
+      // Format risk score as percentage
+      const riskPercentage = provider.risk_score
+        ? `${(provider.risk_score * 100).toFixed(0)}%`
+        : "N/A";
+
       const infoWindow = new google.maps.InfoWindow({
         content: `
-          <div class="p-2">
+          <div class="p-3 min-w-[200px]">
             <h3 class="font-bold text-green-600">${provider.name}</h3>
-            <p class="text-sm">${provider.type}</p>
-            <p class="text-sm">${provider.city}, ${provider.state}</p>
-            <p class="text-xs mt-1">Transport: ${provider.transport_mode}</p>
-            ${
-              provider.flood_zone
-                ? `<p class="text-xs">Flood Zone: ${provider.flood_zone}</p>`
-                : ""
-            }
+            <p class="text-sm text-gray-700">${provider.type}</p>
+            <p class="text-sm text-gray-600">${provider.city}, ${
+          provider.state
+        }</p>
+            <div class="mt-2 pt-2 border-t border-gray-200">
+              <p class="text-xs font-semibold text-gray-700">Transport: ${
+                provider.transport_mode
+              }</p>
+              ${
+                provider.flood_zone
+                  ? `<p class="text-xs text-gray-700 mt-1">Flood Zone: <span class="font-semibold">${provider.flood_zone}</span></p>`
+                  : ""
+              }
+              ${
+                provider.risk_level
+                  ? `<p class="text-xs text-gray-700">Risk Level: <span class="font-semibold capitalize">${provider.risk_level}</span></p>`
+                  : ""
+              }
+              ${
+                provider.risk_score !== undefined
+                  ? `<p class="text-xs text-gray-700">Flood Risk Score: <span class="font-bold" style="color: ${fillColor}">${riskPercentage}</span></p>`
+                  : ""
+              }
+            </div>
           </div>
         `,
       });
 
-      marker.addListener("click", () => {
+      // Show info window on hover
+      marker.addListener("mouseover", () => {
         infoWindow.open(map, marker);
+      });
+
+      // Hide info window when mouse leaves
+      marker.addListener("mouseout", () => {
+        infoWindow.close();
+      });
+
+      // Also keep click handler for provider selection
+      marker.addListener("click", () => {
         if (onProviderClick) onProviderClick(provider);
       });
 
@@ -188,33 +236,46 @@ export default function MapView({
       <div ref={mapRef} className="w-full h-full rounded-lg shadow-lg" />
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
+      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg max-w-[220px]">
         <h3 className="font-bold mb-2 text-gray-900 dark:text-white">Legend</h3>
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
             <span className="text-gray-700 dark:text-gray-300">Hospitals</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-500"></div>
-            <span className="text-gray-700 dark:text-gray-300">Providers</span>
-          </div>
           <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
-            <p className="font-semibold mb-1 text-gray-900 dark:text-white">
-              Flood Risk
+            <p className="font-semibold mb-1 text-gray-900 dark:text-white text-xs">
+              Providers (by Flood Risk)
             </p>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-green-500"></div>
-              <span className="text-gray-700 dark:text-gray-300">Low</span>
+              <div className="w-4 h-4 bg-green-500"></div>
+              <span className="text-gray-700 dark:text-gray-300 text-xs">
+                Low (&lt;30%)
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-yellow-500"></div>
-              <span className="text-gray-700 dark:text-gray-300">Medium</span>
+              <div className="w-4 h-4 bg-yellow-400"></div>
+              <span className="text-gray-700 dark:text-gray-300 text-xs">
+                Moderate (30-60%)
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-1 bg-red-500"></div>
-              <span className="text-gray-700 dark:text-gray-300">High</span>
+              <div className="w-4 h-4 bg-amber-500"></div>
+              <span className="text-gray-700 dark:text-gray-300 text-xs">
+                Moderate-High (60-80%)
+              </span>
             </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500"></div>
+              <span className="text-gray-700 dark:text-gray-300 text-xs">
+                High (≥80%)
+              </span>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+              Hover over markers for details
+            </p>
           </div>
         </div>
       </div>

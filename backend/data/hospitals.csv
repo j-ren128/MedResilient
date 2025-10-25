@@ -1,10 +1,6 @@
 hospital_id,name,address,city,state,zip,latitude,longitude
-H001,Miami General Hospital,1611 NW 12th Ave,Miami,FL,33136,25.7907,-80.2108
-H002,Tampa Bay Medical Center,2 Tampa General Cir,Tampa,FL,33606,27.9444,-82.4619
-H003,Orlando Health Medical Center,52 W Underwood St,Orlando,FL,32806,28.5450,-81.3774
-H004,Jacksonville Memorial Hospital,655 W 8th St,Jacksonville,FL,32209,30.3322,-81.6749
-H005,Fort Lauderdale Regional Hospital,1601 E Las Olas Blvd,Fort Lauderdale,FL,33301,26.1194,-80.1280
-H006,St. Petersburg General,6500 38th Ave N,St. Petersburg,FL,33710,27.8155,-82.7359
-H007,Pensacola Bay Hospital,1000 W Moreno St,Pensacola,FL,32501,30.4213,-87.2169
-H008,Tallahassee Memorial HealthCare,1300 Miccosukee Rd,Tallahassee,FL,32308,30.4518,-84.2307
-
+H001,Jackson Memorial Hospital,1611 NW 12th Ave,Miami,FL,33136,25.7617,-80.1918
+H002,Mayo Clinic Jacksonville,4500 San Pablo Rd,Jacksonville,FL,32224,30.3322,-81.6557
+H003,Tampa General Hospital,1 Tampa General Cir,Tampa,FL,33606,27.9506,-82.4572
+H004,Orlando Health,1414 Kuhl Ave,Orlando,FL,32806,28.5383,-81.3792
+H005,Tallahassee Memorial,1300 Miccosukee Rd,Tallahassee,FL,32308,30.4383,-84.2807

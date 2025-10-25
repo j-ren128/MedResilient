@@ -45,11 +45,11 @@ class GEEService:
             point = ee.Geometry.Point([longitude, latitude])
             
             # Get current date and date N days ago
-            end_date = ee.Date(time.strftime('%Y-%m-%d'))
-            start_date = end_date.advance(-days_back, 'day')
+            start_date = ee.Date(time.strftime('%Y-%m-%d')).advance(-7, 'day')
+            end_date = start_date.advance(5, 'day')
             
             # Use CHIRPS precipitation dataset (daily, global)
-            chirps = ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY') \
+            chirps = ee.ImageCollection('NOAA/CPC/Precipitation') \
                 .filterDate(start_date, end_date) \
                 .select('precipitation')
             
@@ -79,17 +79,7 @@ class GEEService:
             return 0.3
         
         try:
-            point = ee.Geometry.Point([longitude, latitude])
-            
-            # Get elevation data (SRTM)
-            elevation = ee.Image('USGS/SRTMGL1_003')
-            elev_value = elevation.reduceRegion(
-                reducer=ee.Reducer.mean(),
-                geometry=point,
-                scale=30
-            ).getInfo()
-            
-            elev = float(elev_value.get('elevation', 50))
+            elev = self.get_elevation(latitude, longitude)
             
             # Get precipitation (30-day)
             precip = self.get_precipitation_data(latitude, longitude, 30)

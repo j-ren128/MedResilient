@@ -60,7 +60,7 @@ export default function OrderDashboard() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           📦 Orders Dashboard

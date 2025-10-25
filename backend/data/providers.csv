@@ -1,12 +1,7 @@
-provider_id,name,type,address,city,state,zip,latitude,longitude,transport_mode
-P001,MedEquip Florida,Distributor,1500 NW 89th Ct,Miami,FL,33172,25.7860,-80.3370,truck
-P002,ABC Medical Distributors,Distributor,4350 W Cypress St,Tampa,FL,33607,27.9642,-82.5061,truck
-P003,HealthSupply Co,Distributor,7380 Sand Lake Rd,Orlando,FL,32819,28.4547,-81.4595,truck
-P004,Atlantic Medical Supply,Distributor,9143 Philips Hwy,Jacksonville,FL,32256,30.2072,-81.5920,van
-P005,Global MedTech Inc,Manufacturer,2000 Corporate Blvd,Boca Raton,FL,33431,26.3586,-80.0831,truck
-P006,SurgiTech Manufacturing,Manufacturer,3540 Precision Dr,Clearwater,FL,33760,27.9659,-82.7626,truck
-P007,BioMed Solutions,Distributor,5250 W Tyrone Ave,Fort Lauderdale,FL,33319,26.1901,-80.2434,van
-P008,Premier Medical Devices,Manufacturer,150 Douglas Rd,Coral Gables,FL,33134,25.7387,-80.2641,truck
-P009,Southeast Medical Supplies,Distributor,8901 SW 107th Ave,Miami,FL,33176,25.6890,-80.3657,truck
-P010,North Florida Medical,Distributor,2020 Capital Cir NE,Tallahassee,FL,32308,30.4730,-84.2536,truck
-
+provider_id,name,type,address,city,state,zip,latitude,longitude,transport_mode,devices_supplied
+P001,Millennial Healthcare Solutions,Warehouse,1234 Corporate Blvd,Fort Lauderdale,FL,33301,26.1224,-80.1373,truck,"[""Ventilator"", ""CPAP"", ""Defibrillator"", ""Stethoscope"", ""Blood Pressure Monitor""]"
+P002,LEESAR Healthcare Supply Chain Services,Warehouse,4500 Cleveland Ave,Fort Myers,FL,33901,26.6406,-81.8723,truck,"[""Ventilator"", ""CPAP"", ""Defibrillator"", ""Stethoscope"", ""Blood Pressure Monitor""]"
+P003,Garretts Medical Supply Inc,Warehouse,2100 Cypress Gardens Blvd,Winter Haven,FL,33884,28.0631,-81.7675,truck,"[""Ventilator"", ""CPAP"", ""Defibrillator"", ""Stethoscope"", ""Blood Pressure Monitor""]"
+P004,DermaSensor Inc,Manufacturer,1611 NW 12th Ave,Miami,FL,33136,25.7643,-80.1903,truck,"[""Single-use electrosurgical scalpel"", ""Ventilator"", ""CPAP"", ""Defibrillator"", ""Stethoscope"", ""Blood Pressure Monitor""]"
+P005,.decimal LLC,Manufacturer,1400 AAA Dr,Sanford,FL,32773,28.8006,-81.2666,truck,"[""Single-use electrosurgical scalpel"",""Ventilator"", ""CPAP"", ""Defibrillator"", ""Stethoscope"", ""Blood Pressure Monitor""]"
+P006,LENSAR Inc,Manufacturer,5001 Lake Ellenor Dr,Orlando,FL,32809,28.5893,-81.2001,truck,"[""Reusable electrosurgical scalpel"", ""Ventilator"", ""CPAP"", ""Defibrillator"", ""Stethoscope"", ""Blood Pressure Monitor""]"
