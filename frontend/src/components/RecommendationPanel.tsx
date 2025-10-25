@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAppStore } from "../store/appStore";
 import api, { RouteRecommendation } from "../api/client";
 
@@ -22,34 +22,113 @@ export default function RecommendationPanel() {
     setError,
   } = useAppStore();
 
-  const [limit] = useState(5);
   const [selectedDevice, setSelectedDevice] = useState("");
 
+  // Use ref to track the abort controller for canceling ongoing requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Use a more appropriate limit when filtering by device
+  const limit = useMemo(() => (selectedDevice ? 10 : 5), [selectedDevice]); // Allow more results when filtering to see all matches
+
   useEffect(() => {
+    // Cancel previous request when dependencies change
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      console.log("🚫 Cancelled previous recommendation request");
+    }
+
     if (selectedHospital) {
       loadRecommendations();
     }
-  }, [selectedHospital, alpha, beta, selectedDevice]);
+
+    // Cleanup: cancel request on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [selectedHospital, alpha, beta, selectedDevice, limit]);
+
+  // Track when recommendations change
+  useEffect(() => {
+    console.log("📋 Recommendations updated:", recommendations.length, "items");
+    if (recommendations.length > 0) {
+      console.log(
+        "📋 Current recommendations:",
+        recommendations.map((r) => ({
+          provider: r.provider.name,
+          device: r.offered_device || r.requested_device,
+          isSubstitute: r.is_substitute,
+        }))
+      );
+    }
+  }, [recommendations]);
 
   const loadRecommendations = async () => {
     if (!selectedHospital) return;
 
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    console.log("🔄 Loading recommendations...", {
+      hospital: selectedHospital.hospital_id,
+      device: selectedDevice,
+      limit: limit,
+    });
+
     try {
       setIsLoading(true);
+
+      // Create a signal for cancellation
+      const signal = abortController.signal;
+
       const data = await api.getRecommendations(
         selectedHospital.hospital_id,
         alpha,
         beta,
         limit,
-        selectedDevice || undefined
+        selectedDevice || undefined,
+        signal
       );
+
+      // Check if request was aborted
+      if (signal.aborted) {
+        console.log("⚠️ Request was aborted, ignoring response");
+        return;
+      }
+
+      // Debug logging
+      console.log(
+        `Loading recommendations for hospital: ${selectedHospital.hospital_id}`
+      );
+      console.log(`Device filter: ${selectedDevice || "None"}`);
+      console.log(`Limit: ${limit}`);
+      console.log(
+        `Received ${data.length} recommendations:`,
+        data.map((r) => ({
+          provider: r.provider.name,
+          device: r.offered_device || r.requested_device,
+          isSubstitute: r.is_substitute,
+        }))
+      );
+
+      console.log("📊 Setting recommendations:", data.length, "items");
       setRecommendations(data);
       setError(null);
-    } catch (error) {
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error.name === "AbortError" || error.name === "CanceledError") {
+        console.log("⚠️ Request was cancelled");
+        return;
+      }
       console.error("Failed to load recommendations:", error);
       setError("Failed to load recommendations");
     } finally {
-      setIsLoading(false);
+      // Only set loading to false if this wasn't aborted
+      if (!abortController.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 

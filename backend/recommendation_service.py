@@ -99,10 +99,12 @@ class RecommendationService:
                     for supplied in provider.devices_supplied:
                         if supplied in acceptable_products:
                             provider_product_map[provider.provider_id] = supplied
+                            print(f"✓ {provider.provider_id} matches: {supplied}")
                             break
             
             filtered_providers = [p for p in providers if p.provider_id in provider_product_map]
             print(f"Filtered to {len(filtered_providers)} providers (including substitutes)")
+            print(f"Filtered providers: {[p.provider_id for p in filtered_providers]}")
         else:
             filtered_providers = providers
             provider_product_map = {}
@@ -156,8 +158,9 @@ class RecommendationService:
         # Sort by weighted score (lower is better)
         recommendations.sort(key=lambda x: x.weighted_score)
         
-        # Return top N recommendations if limit specified
+        print(f"Generated {len(recommendations)} total recommendations")
         if limit:
+            print(f"Limiting to top {limit} recommendations")
             return recommendations[:limit]
         
         return recommendations

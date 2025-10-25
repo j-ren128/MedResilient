@@ -260,10 +260,22 @@ def get_map_data():
             fema_data = fema_service.get_flood_zone(
                 provider.latitude, provider.longitude
             )
+            
+            # Get GEE data for combined risk calculation
+            gee_risk = gee_service.get_flood_susceptibility(
+                provider.latitude, provider.longitude
+            )
+            
+            # Calculate combined risk score
+            combined_risk = fema_service.combine_risk_score(
+                fema_data['risk_score'], gee_risk
+            )
+            
             marker = provider.to_dict()
             marker['flood_zone'] = fema_data['zone']
             marker['risk_level'] = fema_data['risk_level']
-            marker['risk_score'] = fema_data['risk_score']
+            marker['fema_risk_score'] = fema_data['risk_score']  # FEMA-only score
+            marker['risk_score'] = combined_risk  # Combined score (for backward compatibility)
             provider_markers.append(marker)
         
         return jsonify({

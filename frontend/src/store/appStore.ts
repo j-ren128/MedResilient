@@ -34,6 +34,7 @@ interface AppState {
   error: string | null;
   filterDevice: string;
   filterHospital: string;
+  showCombinedRisk: boolean; // Toggle between FEMA-only and combined risk scores
 
   // Actions
   setHospitals: (hospitals: Hospital[]) => void;
@@ -58,6 +59,7 @@ interface AppState {
   setError: (error: string | null) => void;
   setFilterDevice: (device: string) => void;
   setFilterHospital: (hospital: string) => void;
+  setShowCombinedRisk: (showCombined: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -76,6 +78,7 @@ export const useAppStore = create<AppState>((set) => ({
   error: null,
   filterDevice: "",
   filterHospital: "",
+  showCombinedRisk: true, // Default to showing combined risk scores
 
   // Actions
   setHospitals: (hospitals) => set({ hospitals }),
@@ -107,4 +110,6 @@ export const useAppStore = create<AppState>((set) => ({
   setError: (error) => set({ error }),
   setFilterDevice: (device) => set({ filterDevice: device }),
   setFilterHospital: (hospital) => set({ filterHospital: hospital }),
+  setShowCombinedRisk: (showCombined) =>
+    set({ showCombinedRisk: showCombined }),
 }));

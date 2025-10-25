@@ -54,9 +54,9 @@ function App() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">🏥 MedResilient</h1>
+              <h1 className="text-3xl font-bold">🏥 MedAlt</h1>
               <p className="text-sm text-blue-100">
-                Climate-Resilient & Low-Carbon Medical Supply Routing
+                Google Earth AI for Healthcare Supply Chain Sustainability
               </p>
             </div>
             <div className="flex gap-2">

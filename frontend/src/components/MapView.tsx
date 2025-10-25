@@ -19,7 +19,13 @@ export default function MapView({
   const [routePolyline, setRoutePolyline] =
     useState<google.maps.Polyline | null>(null);
 
-  const { hospitals, providers, selectedRecommendation } = useAppStore();
+  const {
+    hospitals,
+    providers,
+    selectedRecommendation,
+    showCombinedRisk,
+    setShowCombinedRisk,
+  } = useAppStore();
 
   // Initialize map
   useEffect(() => {
@@ -98,14 +104,19 @@ export default function MapView({
       let fillColor = "#10B981"; // green (low risk)
       let strokeColor = "#059669";
 
-      if (provider.risk_score !== undefined) {
-        if (provider.risk_score >= 0.8) {
+      // Use appropriate risk score based on toggle state
+      const riskScore = showCombinedRisk
+        ? provider.risk_score
+        : (provider as any).fema_risk_score;
+
+      if (riskScore !== undefined) {
+        if (riskScore >= 0.8) {
           fillColor = "#EF4444"; // red (high risk)
           strokeColor = "#DC2626";
-        } else if (provider.risk_score >= 0.6) {
+        } else if (riskScore >= 0.6) {
           fillColor = "#F59E0B"; // amber (moderate-high risk)
           strokeColor = "#D97706";
-        } else if (provider.risk_score >= 0.3) {
+        } else if (riskScore >= 0.3) {
           fillColor = "#FBBF24"; // yellow (moderate risk)
           strokeColor = "#F59E0B";
         }
@@ -126,9 +137,13 @@ export default function MapView({
       });
 
       // Format risk score as percentage
-      const riskPercentage = provider.risk_score
-        ? `${(provider.risk_score * 100).toFixed(0)}%`
+      const riskPercentage = riskScore
+        ? `${(riskScore * 100).toFixed(0)}%`
         : "N/A";
+
+      const riskLabel = showCombinedRisk
+        ? "Combined Risk Score"
+        : "FEMA Risk Score";
 
       const infoWindow = new google.maps.InfoWindow({
         content: `
@@ -153,8 +168,8 @@ export default function MapView({
                   : ""
               }
               ${
-                provider.risk_score !== undefined
-                  ? `<p class="text-xs text-gray-700">Flood Risk Score: <span class="font-bold" style="color: ${fillColor}">${riskPercentage}</span></p>`
+                riskScore !== undefined
+                  ? `<p class="text-xs text-gray-700">${riskLabel}: <span class="font-bold" style="color: ${fillColor}">${riskPercentage}</span></p>`
                   : ""
               }
             </div>
@@ -181,7 +196,7 @@ export default function MapView({
     });
 
     setMarkers(newMarkers);
-  }, [map, hospitals, providers]);
+  }, [map, hospitals, providers, showCombinedRisk]);
 
   // Draw route when recommendation is selected
   useEffect(() => {
@@ -198,7 +213,8 @@ export default function MapView({
       routePolyline.setMap(null);
     }
 
-    const { provider, hospital, flood_risk } = selectedRecommendation;
+    const { provider, hospital, flood_risk, route_polyline } =
+      selectedRecommendation;
 
     // Determine route color based on flood risk
     let strokeColor = "#10B981"; // green (low risk)
@@ -208,11 +224,30 @@ export default function MapView({
       strokeColor = "#F59E0B"; // yellow (medium risk)
     }
 
-    // Draw polyline
-    const path = [
-      { lat: provider.latitude, lng: provider.longitude },
-      { lat: hospital.latitude, lng: hospital.longitude },
-    ];
+    // Use actual route polyline if available, otherwise fall back to straight line
+    let path;
+    if (route_polyline) {
+      try {
+        // Decode the polyline from the backend
+        path = google.maps.geometry.encoding.decodePath(route_polyline);
+      } catch (error) {
+        console.warn(
+          "Failed to decode route polyline, using straight line:",
+          error
+        );
+        // Fallback to straight line if polyline decoding fails
+        path = [
+          { lat: provider.latitude, lng: provider.longitude },
+          { lat: hospital.latitude, lng: hospital.longitude },
+        ];
+      }
+    } else {
+      // Fallback to straight line if no polyline available
+      path = [
+        { lat: provider.latitude, lng: provider.longitude },
+        { lat: hospital.latitude, lng: hospital.longitude },
+      ];
+    }
 
     const polyline = new google.maps.Polyline({
       path: path,
@@ -245,7 +280,7 @@ export default function MapView({
           </div>
           <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
             <p className="font-semibold mb-1 text-gray-900 dark:text-white text-xs">
-              Providers (by Flood Risk)
+              Providers (by {showCombinedRisk ? "Combined" : "FEMA"} Risk)
             </p>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-500"></div>
@@ -276,6 +311,23 @@ export default function MapView({
             <p className="text-xs text-gray-600 dark:text-gray-400 italic">
               Hover over markers for details
             </p>
+          </div>
+          <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-700 dark:text-gray-300">
+                Risk Display:
+              </span>
+              <button
+                onClick={() => setShowCombinedRisk(!showCombinedRisk)}
+                className={`px-2 py-1 text-xs rounded transition-colors ${
+                  showCombinedRisk
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300"
+                }`}
+              >
+                {showCombinedRisk ? "Combined" : "FEMA Only"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

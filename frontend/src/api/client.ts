@@ -30,6 +30,7 @@ export interface Provider {
   flood_zone?: string;
   risk_level?: string;
   risk_score?: number;
+  fema_risk_score?: number; // FEMA-only risk score
   devices_supplied?: string[];
 }
 
@@ -117,15 +118,20 @@ export const api = {
     alpha?: number,
     beta?: number,
     limit?: number,
-    device?: string
+    device?: string,
+    signal?: AbortSignal
   ): Promise<RouteRecommendation[]> => {
-    const response = await apiClient.post("/recommendations", {
-      hospital_id: hospitalId,
-      alpha,
-      beta,
-      limit,
-      device,
-    });
+    const response = await apiClient.post(
+      "/recommendations",
+      {
+        hospital_id: hospitalId,
+        alpha,
+        beta,
+        limit,
+        device,
+      },
+      { signal }
+    );
     return response.data.recommendations;
   },
 
